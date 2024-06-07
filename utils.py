@@ -11,6 +11,7 @@ import os
 from tqdm import tqdm
 import zipfile
 import gzip
+import pysftp
 
 def download_rinex_obs(year, gnss_day, station_list, site, path_download):
     
@@ -99,6 +100,47 @@ def delete_useless_file(file_path):
             file_delete=file_path+'/'+file
             os.remove(file_delete)
             
+def Donwload_STEIN_day(year, month, day, path_download, gnss_day):
+    
+    if month>10: 
+        month=str(month)
+    else:
+        month='0'+str(month)
+        
+    if day>10: 
+        day=str(day)
+    else:
+        day='0'+str(day)
+
+    Hostname = "193.248.246.238"
+    
+    Username = 'Admin'
+    
+    Passsword = '12345678'
+    
+    path = '/SD Card/Data/STEI/8564/'+str(year)+'/'+str(month)+'/'+str(day)
+    
+    donwload_path = os.getcwd()+'/DOWNLOAD/Donwload_file_RGP/STEIN'+"/"+str(year)+'/'+str(gnss_day)+'/'+'Antenne'
+    try: 
+        os.mkdir(donwload_path)
+    except: 
+        pass
+    cnopts = pysftp.CnOpts()
+    cnopts.hostkeys = None
+    with pysftp.Connection(host=Hostname, username=Username, password=Passsword, cnopts=cnopts) as sftp:
+    
+    
+    # Define the remote file that you want to download
+        filename = '8564'+str(gnss_day)+'0.24o.zip'
+    
+        remoteFilePath = path+'/'+filename
+    
+    # Define the local path where the file will be saved
+    
+        localFilePath = donwload_path+'/'+filename
+        
+        sftp.get(remoteFilePath, localFilePath, callback=lambda x,y: print("{} transfered out of {}".format(x,y)))
+    
 def Donwload_SIRA_day(year, month, day, station_list, site, path_download, gnss_day):
     
     if month>10: 
@@ -127,6 +169,14 @@ def Donwload_SIRA_day(year, month, day, station_list, site, path_download, gnss_
     ftp.retrbinary("RETR " + filename, open(donwload_station_path,'wb').write)
     ftp.quit()
     ftp.close()
+    
+def unzip_STEIN_file(year, gnss_day): 
+    donwload_path = os.getcwd()+'/DOWNLOAD/Donwload_file_RGP/STEIN'+"/"+str(year)+'/'+str(gnss_day)+'/'+'Antenne'
+    # os.listdir(donwload_path)
+    file_path=donwload_path+'/'+os.listdir(donwload_path)[0]
+    with zipfile.ZipFile(file_path, "r", zipfile.ZIP_DEFLATED) as zip:
+        zip.extractall(donwload_path) 
+    os.remove(file_path)
            
 def unzip_SIRA_file(year, gnss_day): 
     donwload_path = os.getcwd()+'/DOWNLOAD/Donwload_file_RGP/SIRA'+"/"+str(year)+'/'+str(gnss_day)+'/'+'Antenne'
@@ -136,7 +186,7 @@ def unzip_SIRA_file(year, gnss_day):
         zip.extractall(donwload_path) 
     os.remove(file_path)
 
-def Donwload_IGS_product(gnss_week, gnss_day, year):
+def Donwload_IGS_product(gnss_week, gnss_day, year, site):
     
     path = 'pub/products/ephemerides/'+str(gnss_week[0])
     ftp = ftplib.FTP("rgpdata.ign.fr") 
@@ -144,7 +194,7 @@ def Donwload_IGS_product(gnss_week, gnss_day, year):
     ftp.cwd(path)
     # donwload_path = path_download+'/'+site
     
-    donwload_path = os.getcwd()+'/DOWNLOAD/Donwload_file_RGP/SIRA'+"/"+str(year)+'/'+str(gnss_day)+'/'+'IGS'
+    donwload_path = os.getcwd()+'/DOWNLOAD/Donwload_file_RGP/'+site+"/"+str(year)+'/'+str(gnss_day)+'/'+'IGS'
     
     try:
         os.mkdir(donwload_path)
@@ -187,7 +237,11 @@ def Donwload_IGS_product(gnss_week, gnss_day, year):
 def calcul_GNSS_RTK_LIB(site, site_num ,year, month, day, gnss_day, gnss_week, rgp_obs_file):
     root_path=os.getcwd()
     folder_process=str(year)+str(month)+str(day)
-    process_path=root_path+'/PROCESS_RESULT/'+folder_process
+    process_path=root_path+'/PROCESS_RESULT/'+str(site_num)+'/'+folder_process
+    try: 
+        os.mkdir(root_path+'/PROCESS_RESULT/'+str(site_num))
+    except: 
+        pass
     try: 
         os.mkdir(process_path)
     except: 
